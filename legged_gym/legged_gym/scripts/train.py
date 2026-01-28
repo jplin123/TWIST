@@ -47,6 +47,7 @@ def train(args):
     except:
         pass
     
+    disable_wandb = args.no_wandb or os.environ.get("WANDB_DISABLED", "true").lower() in ("1", "true", "yes", "on")
     if args.debug:
         mode = "disabled"
         args.rows = 10
@@ -56,22 +57,26 @@ def train(args):
     else:
         mode = "online"
     
-    if args.no_wandb:
+    if disable_wandb:
         mode = "disabled"
+        os.environ["WANDB_MODE"] = "disabled"
         
     robot_type = args.task.split("_")[0]
     
-    wandb_project = f"{robot_type}_mimic"
-    wandb.init(project=wandb_project, name=args.exptid, mode=mode, dir="../../logs")
-    # wandb.save(LEGGED_GYM_ENVS_DIR + "/base/legged_robot_config.py", policy="now")
-    # wandb.save(LEGGED_GYM_ENVS_DIR + "/base/legged_robot.py", policy="now")
-    # wandb.save(LEGGED_GYM_ENVS_DIR + "/base/humanoid_config.py", policy="now")
-    # wandb.save(LEGGED_GYM_ENVS_DIR + "/base/humanoid.py", policy="now")
-    if robot_type == "g1":
-        wandb.save(LEGGED_GYM_ENVS_DIR + "/g1/g1_mimic_distill_config.py", policy="now")
+    if not disable_wandb:
+        wandb_project = f"{robot_type}_mimic"
+        wandb.init(project=wandb_project, name=args.exptid, mode=mode, dir="../../logs")
+        if robot_type == "g1":
+            wandb.save(LEGGED_GYM_ENVS_DIR + "/g1/g1_mimic_distill_config.py", policy="now")
     
     env, _ = task_registry.make_env(name=args.task, args=args)
-    ppo_runner, train_cfg = task_registry.make_alg_runner(log_root=log_pth, env=env, name=args.task, args=args)
+    ppo_runner, train_cfg = task_registry.make_alg_runner(
+        log_root=log_pth,
+        env=env,
+        name=args.task,
+        args=args,
+        init_wandb=not disable_wandb,
+    )
     ppo_runner.learn(num_learning_iterations=train_cfg.runner.max_iterations, init_at_random_ep_len=True)
     
 

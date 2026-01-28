@@ -36,6 +36,7 @@ class Stand14DofWithUpperCSV(LeggedRobot):
         )
         self.push_enabled = False
         self.pd_targets = torch.zeros_like(self.default_dof_pos_all)
+        self.reach_goal_timer = torch.zeros(self.num_envs, device=self.device)
         self.noise_scale_vec = self._get_noise_scale_vec(self.cfg)
         self._update_upper_body_targets(0.0)
 
@@ -183,6 +184,7 @@ class Stand14DofWithUpperCSV(LeggedRobot):
         )
         self.time_out_buf = self.episode_length_buf > self.max_episode_length
         self.reset_buf = low_height | tilt_fail | contact_fail | self.time_out_buf
+        self.delta_yaw = torch.zeros_like(tilt)
 
     def _reward_upright(self):
         tilt = torch.linalg.norm(self.projected_gravity[:, :2], dim=1)
@@ -200,8 +202,15 @@ class Stand14DofWithUpperCSV(LeggedRobot):
         return torch.exp(-torch.linalg.norm(self.base_ang_vel[:, :2], dim=1))
 
     def _reward_contact_balance(self):
-        contact_forces = torch.norm(self.contact_forces[:, self.feet_indices, 2], dim=-1)
-        total = torch.sum(contact_forces, dim=1) + 1e-3
+        if self.feet_indices.numel() < 2:
+            return torch.ones(self.num_envs, device=self.device)
+        contact_forces = torch.abs(self.contact_forces[:, self.feet_indices, 2])
+        if contact_forces.ndim == 2:
+            contact_forces = contact_forces.unsqueeze(-1)
+        contact_forces = contact_forces.view(self.num_envs, -1)
+        if contact_forces.shape[1] < 2:
+            return torch.ones(self.num_envs, device=self.device)
+        total = torch.sum(contact_forces[:, :2], dim=1) + 1e-3
         diff = torch.abs(contact_forces[:, 0] - contact_forces[:, 1])
         balance = 1.0 - diff / total
         return torch.clamp(balance, 0.0, 1.0)

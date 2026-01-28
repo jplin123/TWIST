@@ -32,7 +32,7 @@ class Stand14DofWithUpperCSVCfg(LeggedRobotCfg):
         n_priv = 0
         num_privileged_obs = None
         history_len = 1
-        history_encoding = False
+        history_encoding = True
         obs_type = "stand14"
         normalize_obs = True
         episode_length_s = 20.0
@@ -108,6 +108,15 @@ class Stand14DofWithUpperCSVCfg(LeggedRobotCfg):
         penalize_contacts_on = ["shoulder", "elbow"]
         terminate_after_contacts_on = ["torso_link", "head_link"]
         feet_bodies = ["left_ankle_roll_link", "right_ankle_roll_link"]
+        torso_name: str = "pelvis"
+        chest_name: str = "imu_in_torso"
+        upper_arm_name: str = "shoulder_roll_link"
+        lower_arm_name: str = "elbow_link"
+        thigh_name: str = "hip"
+        shank_name: str = "knee"
+        foot_name: str = "ankle_roll_link"
+        waist_name: list = ["torso_link", "waist_roll_link", "waist_yaw_link"]
+        hand_name: list = ["right_rubber_hand", "left_rubber_hand"]
         flip_visual_attachments = False
 
     class commands(LeggedRobotCfg.commands):
@@ -224,8 +233,10 @@ class Stand14DofWithUpperCSVCfgPPO(LeggedRobotCfgPPO):
         num_learning_epochs = 5
         num_mini_batches = 4
         clip_param = 0.2
+        normalizer_update_iterations = 3000
 
     class runner(LeggedRobotCfgPPO.runner):
+        runner_class_name = "OnPolicyRunner"
         policy_class_name = "ActorCritic"
         algorithm_class_name = "PPO"
         num_steps_per_env = 24
