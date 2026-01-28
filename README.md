@@ -65,6 +65,15 @@ remember to start redis server on your computer:
 redis-server --daemonize yes
 ```
 
+```bash
+export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+export CC=/usr/bin/gcc
+export CXX=/usr/bin/g++
+export __NV_PRIME_RENDER_OFFLOAD=1
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+```
+
 if you wanna do sim2real, you also need to install [unitree_sdk2py](https://github.com/unitreerobotics/unitree_sdk2_python).
 ```bash
 git clone https://github.com/unitreerobotics/unitree_sdk2_python.git
@@ -164,6 +173,23 @@ python server_high_level_motion_lib.py --motion_file PATH/TO/YOUR/MOTION/FILE --
 - As later we have upgraded to use [GMR](https://github.com/YanjieZe/GMR) for real-time teleop, you can first check [GMR](https://github.com/YanjieZe/GMR) for real-time motion retargeting. After you can successfully run GMR with your MoCap, it would be very easy to modify our provided script to your setting.
 - The teleop script could be further improved. We are preparing to release the new version soon, and this old teleop script will be only used for your reference.
 
+## Stand 14-DoF balancing task
+We added a disturbance-rich standing task (`stand_14dof_with_upper_csv`) where only the 12 leg joints and 2 waist joints are controlled by RL, while the remaining upper-body joints follow a CSV trajectory player. A minimal workflow:
+
+```bash
+cd legged_gym/legged_gym/scripts
+python train.py --task stand_14dof_with_upper_csv --proj_name stand14 --exptid run01 --num_envs 2048
+
+# Export the trained policy to ONNX once training finishes.
+python export_stand14dof_onnx.py --run-dir ../../logs/stand_14dof_with_upper_csv/run01 --output stand14dof.onnx
+
+# Run inference while waving the arms via CSV.
+cd ../..
+python run_policy.py --onnx stand14dof.onnx --csv assets/upper_body_csv/wave.csv --num-envs 64 --headless
+```
+
+The CSV mapping used by this task is documented in `legged_gym/legged_gym/envs/g1/stand_14dof_with_upper_csv_config.py`. Provide your own CSV file (same joint-name columns) to test other disturbances.
+
 # Q & A
 
 Q: How to use a new retargeted motion pkl file from GMR?  I checked the numpy version and found that TWIST numpy version is 1.23.0, but GMR numpy version is 2.2.6. I guess this version mismatch causes compatibility issues 
@@ -172,4 +198,3 @@ A: see [issue#10](https://github.com/YanjieZe/TWIST/issues/10).
    
 # Contact
 If you have any questions, please contact me at `yanjieze@stanford.edu`.
-
