@@ -181,11 +181,28 @@ cd legged_gym/legged_gym/scripts
 python train.py --task stand_14dof_with_upper_csv --proj_name stand14 --exptid run01 --num_envs 2048
 
 # Export the trained policy to ONNX once training finishes.
-python export_stand14dof_onnx.py --run-dir ../../logs/stand_14dof_with_upper_csv/run01 --output stand14dof.onnx
+python export_stand14dof_onnx.py --run-dir ../../logs/stand14/YYYYMMDD_HHMMSS_run01 --output stand14dof.onnx
 
 # Run inference while waving the arms via CSV.
 cd ../..
 python run_policy.py --onnx stand14dof.onnx --csv assets/upper_body_csv/wave.csv --num-envs 64 --headless
+```
+
+Note: training logs are saved under `legged_gym/logs/<proj_name>/<YYYYMMDD_HHMMSS>_<exptid>`.
+
+Quick visual check (plays the latest run matching the exptid):
+```bash
+python legged_gym/legged_gym/scripts/play.py --task stand_14dof_with_upper_csv --proj_name stand14 --exptid run01
+# or pass the full run directory:
+python legged_gym/legged_gym/scripts/play.py --task stand_14dof_with_upper_csv --run_dir legged_gym/logs/stand14/YYYYMMDD_HHMMSS_run01
+# limit play length:
+python legged_gym/legged_gym/scripts/play.py --task stand_14dof_with_upper_csv --proj_name stand14 --exptid run01 --play_episodes 1
+# run indefinitely (default), stop with window close or Ctrl+C
+# debug init (disable domain rand + CSV motion):
+python legged_gym/legged_gym/scripts/play.py --task stand_14dof_with_upper_csv --proj_name stand14 --exptid run01 --debug_init
+
+# debug init for training:
+python legged_gym/legged_gym/scripts/train.py --task stand_14dof_with_upper_csv --proj_name stand14 --exptid run01 --debug_init --num_envs 2048
 ```
 
 The CSV mapping used by this task is documented in `legged_gym/legged_gym/envs/g1/stand_14dof_with_upper_csv_config.py`. Provide your own CSV file (same joint-name columns) to test other disturbances.

@@ -196,6 +196,7 @@ def get_args():
         {"name": "--cols", "type": int, "help": "num_cols"},
         {"name": "--debug", "action": "store_true", "default": False, "help": "Disable wandb logging"},
         {"name": "--proj_name", "type": str,  "default": "h1", "help": "run folder name."},
+        {"name": "--run_dir", "type": str, "help": "full path to a run directory under logs; overrides proj_name/exptid"},
         
         {"name": "--exptid", "type": str, "help": "exptid"},
         {"name": "--entity", "type": str, "default": "", "help": "wandb entity"},
@@ -219,6 +220,9 @@ def get_args():
         {"name": "--record_log", "action": "store_true", "default": False, "help": "record log"},
         
         {"name": "--use_transformer", "action": "store_true", "default": False, "help": "use transformer"},
+        {"name": "--play_steps", "type": int, "help": "max steps to run in play mode"},
+        {"name": "--play_episodes", "type": int, "help": "max episodes to run in play mode"},
+        {"name": "--debug_init", "action": "store_true", "default": False, "help": "disable domain rand and CSV motion"},
 
         {"name": "--teacher_exptid", "type": str, "help": "teacher exptid", "default": "mimic"},
         {"name": "--teacher_checkpoint", "type": int, "help": "teacher checkpoint", "default": -1},

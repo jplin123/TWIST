@@ -2,6 +2,7 @@ import argparse
 import os
 from types import SimpleNamespace
 
+import isaacgym  # noqa: F401 - must be imported before torch
 import torch
 
 from legged_gym.envs import task_registry

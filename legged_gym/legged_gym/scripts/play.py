@@ -32,6 +32,7 @@ import os
 
 from legged_gym.envs import *
 from legged_gym.gym_utils import get_args, task_registry
+from legged_gym import LEGGED_GYM_ROOT_DIR
 import torch
 import faulthandler
 from tqdm import tqdm
@@ -67,13 +68,72 @@ def set_play_cfg(env_cfg):
         env_cfg.motion.motion_curriculum = False
 
 
+def apply_debug_init(env_cfg):
+    # Disable domain randomization
+    if hasattr(env_cfg, "domain_rand"):
+        env_cfg.domain_rand.randomize_friction = False
+        env_cfg.domain_rand.randomize_base_mass = False
+        env_cfg.domain_rand.randomize_base_com = False
+        env_cfg.domain_rand.push_robots = False
+        env_cfg.domain_rand.push_end_effector = False
+        env_cfg.domain_rand.randomize_motor = False
+        env_cfg.domain_rand.action_delay = False
+    # Disable observation noise
+    if hasattr(env_cfg, "noise"):
+        env_cfg.noise.add_noise = False
+    # Freeze upper-body CSV motion
+    if hasattr(env_cfg, "upper_body_csv"):
+        env_cfg.upper_body_csv.random_start = False
+        env_cfg.upper_body_csv.default_amplitude = 0.0
+        env_cfg.upper_body_csv.max_amplitude = 0.0
+        env_cfg.upper_body_csv.default_speed = 1.0
+        env_cfg.upper_body_csv.max_speed = 1.0
+    if hasattr(env_cfg, "env"):
+        env_cfg.env.randomize_dof_pos = False
+
+
+def resolve_run_dir(args):
+    if args.run_dir:
+        run_dir = os.path.abspath(args.run_dir)
+        return run_dir, os.path.basename(run_dir.rstrip("/"))
+
+    log_root = os.path.join(LEGGED_GYM_ROOT_DIR, "logs", args.proj_name)
+    if args.exptid:
+        direct = os.path.join(log_root, args.exptid)
+        if os.path.isdir(direct):
+            return direct, args.exptid
+        if os.path.isdir(log_root):
+            suffix = f"_{args.exptid}"
+            runs = [
+                name for name in os.listdir(log_root)
+                if os.path.isdir(os.path.join(log_root, name)) and name.endswith(suffix)
+            ]
+            if runs:
+                runs.sort()
+                return os.path.join(log_root, runs[-1]), runs[-1]
+
+    if os.path.isdir(log_root):
+        runs = [
+            name for name in os.listdir(log_root)
+            if os.path.isdir(os.path.join(log_root, name))
+        ]
+        if runs:
+            runs.sort()
+            return os.path.join(log_root, runs[-1]), runs[-1]
+
+    fallback = os.path.join(log_root, args.exptid or "")
+    return fallback, os.path.basename(fallback.rstrip("/"))
+
+
 def play(args):
     faulthandler.enable()
-    log_pth = "../../logs/{}/".format(args.proj_name) + args.exptid
+    log_pth, run_name = resolve_run_dir(args)
 
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
 
     set_play_cfg(env_cfg)
+    if args.debug_init:
+        apply_debug_init(env_cfg)
 
     env_cfg.env.record_video = args.record_video
     env_cfg.env.rand_reset = False
@@ -89,6 +149,8 @@ def play(args):
 
     # load policy
     train_cfg.runner.resume = True
+    train_cfg.runner.load_run = -1
+    train_cfg.runner.checkpoint = -1
     ppo_runner, train_cfg, log_pth = task_registry.make_alg_runner(log_root = log_pth, env=env, name=args.task, args=args, train_cfg=train_cfg, return_log_dir=True)
 
     if args.use_jit:
@@ -114,9 +176,9 @@ def play(args):
         env.enable_viewer_sync = True
         # env.enable_viewer_sync = False
         for i in range(env.num_envs):
-            video_name = args.proj_name + "-" + args.exptid +".mp4"
-            run_name = log_pth.split("/")[-1]
-            path = f"../../logs/videos_retarget/{run_name}"
+            video_tag = args.exptid or run_name
+            video_name = args.proj_name + "-" + video_tag + ".mp4"
+            path = os.path.join(LEGGED_GYM_ROOT_DIR, "logs", "videos_retarget", run_name)
             if not os.path.exists(path):
                 os.makedirs(path)
             video_name = os.path.join(path, video_name)
@@ -126,23 +188,36 @@ def play(args):
 
     if args.record_log:
         import json
-        run_name = log_pth.split("/")[-1]
         logs_dict = []
-        dict_name = args.proj_name + "-" + args.exptid + ".json"
-        path = f"../../logs/env_logs/{run_name}"
+        log_tag = args.exptid or run_name
+        dict_name = args.proj_name + "-" + log_tag + ".json"
+        path = os.path.join(LEGGED_GYM_ROOT_DIR, "logs", "env_logs", run_name)
         if not os.path.exists(path):
             os.makedirs(path)
         dict_name = os.path.join(path, dict_name)
         
     
-    if not (args.record_video or args.record_log):
-        traj_length = 100*int(env.max_episode_length)
+    if args.play_steps is not None and args.play_steps > 0:
+        traj_length = args.play_steps
+    elif args.play_episodes is not None and args.play_episodes > 0:
+        traj_length = args.play_episodes * int(env.max_episode_length)
     else:
-        traj_length = 2 * int(env.max_episode_length)
+        traj_length = None
         
     env_id = env.lookat_id
 
-    for i in tqdm(range(traj_length)):
+    if traj_length is not None:
+        iterator = tqdm(range(traj_length))
+        def iter_steps():
+            for _ in iterator:
+                yield
+    else:
+        iterator = tqdm(total=None)
+        def iter_steps():
+            while True:
+                yield
+
+    for _ in iter_steps():
         if args.use_jit:
             actions = policy_jit(obs.detach())
         else:
@@ -165,6 +240,9 @@ def play(args):
         # Interaction
         if env.button_pressed:
             print(f"env_id: {env.lookat_id:<{5}}")
+
+        if traj_length is None:
+            iterator.update(1)
     
     if args.record_video:
         for mp4_writer in mp4_writers:

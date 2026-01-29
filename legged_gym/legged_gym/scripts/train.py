@@ -38,10 +38,14 @@ from legged_gym.gym_utils import get_args, task_registry
 import torch
 import wandb
 
+from legged_gym.scripts.play import apply_debug_init
+
 def train(args):
     args.headless = True
     
-    log_pth = LEGGED_GYM_ROOT_DIR + "/logs/{}/".format(args.proj_name) + args.exptid
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_id = f"{timestamp}_{args.exptid}" if args.exptid else timestamp
+    log_pth = LEGGED_GYM_ROOT_DIR + "/logs/{}/".format(args.proj_name) + run_id
     try:
         os.makedirs(log_pth)
     except:
@@ -65,11 +69,16 @@ def train(args):
     
     if not disable_wandb:
         wandb_project = f"{robot_type}_mimic"
-        wandb.init(project=wandb_project, name=args.exptid, mode=mode, dir="../../logs")
+        wandb.init(project=wandb_project, name=run_id, mode=mode, dir="../../logs")
         if robot_type == "g1":
             wandb.save(LEGGED_GYM_ENVS_DIR + "/g1/g1_mimic_distill_config.py", policy="now")
     
-    env, _ = task_registry.make_env(name=args.task, args=args)
+    if args.debug_init:
+        env_cfg, _ = task_registry.get_cfgs(name=args.task)
+        apply_debug_init(env_cfg)
+        env, _ = task_registry.make_env(name=args.task, args=args, env_cfg=env_cfg)
+    else:
+        env, _ = task_registry.make_env(name=args.task, args=args)
     ppo_runner, train_cfg = task_registry.make_alg_runner(
         log_root=log_pth,
         env=env,
