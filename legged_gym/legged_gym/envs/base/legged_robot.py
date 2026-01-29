@@ -828,6 +828,13 @@ class LeggedRobot(BaseTask):
         asset_options.thickness = self.cfg.asset.thickness
         asset_options.disable_gravity = self.cfg.asset.disable_gravity
 
+        if os.environ.get("TWIST_DEBUG_ASSET") == "1":
+            print(
+                f"[DEBUG] asset.fix_base_link={asset_options.fix_base_link} "
+                f"asset.disable_gravity={asset_options.disable_gravity} "
+                f"sim.gravity={self.sim_params.gravity}"
+            )
+
         robot_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
         self.num_dof = self.gym.get_asset_dof_count(robot_asset)
         self.num_bodies = self.gym.get_asset_rigid_body_count(robot_asset)

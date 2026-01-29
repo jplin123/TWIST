@@ -41,8 +41,9 @@ class Stand14DofWithUpperCSVCfg(LeggedRobotCfg):
         include_foot_contacts = True
         randomize_start_pos = False
         randomize_start_yaw = False
-        min_base_height = 0.85
-        terminate_tilt = 0.6
+        randomize_dof_pos = False
+        min_base_height = 0.6
+        terminate_tilt = 1.0
         terminate_on_fall = True
 
     class terrain(LeggedRobotCfg.terrain):
@@ -105,7 +106,10 @@ class Stand14DofWithUpperCSVCfg(LeggedRobotCfg):
     class asset(LeggedRobotCfg.asset):
         file = f"{LEGGED_GYM_ROOT_DIR}/../assets/g1/g1_custom_collision_with_fixed_hand.urdf"
         penalize_contacts_on = ["shoulder", "elbow"]
-        terminate_after_contacts_on = ["torso_link", "head_link"]
+        terminate_after_contacts_on = ["torso_link"]
+        fix_base_link = False
+        disable_gravity = False
+        collapse_fixed_joints = False
         feet_bodies = ["left_ankle_roll_link", "right_ankle_roll_link"]
         torso_name: str = "pelvis"
         chest_name: str = "imu_in_torso"
@@ -193,9 +197,9 @@ class Stand14DofWithUpperCSVCfg(LeggedRobotCfg):
         interpolate = True
         random_start = True
         default_amplitude = 0.0
-        max_amplitude = 1.0
+        max_amplitude = 0.5
         default_speed = 1.0
-        max_speed = 1.5
+        max_speed = 1.0
         joint_columns = {
             "waist_yaw_joint": "waist_yaw_joint",
             "left_shoulder_pitch_joint": "left_shoulder_pitch_joint",
@@ -209,11 +213,11 @@ class Stand14DofWithUpperCSVCfg(LeggedRobotCfg):
         }
 
     class curriculum:
-        enable = True
-        csv_motion_ramp_iters = 2000
-        csv_speed_ramp_iters = 4000
-        push_start_iters = 5000
-        amp_warmup_steps = 1000
+        enable = False
+        csv_motion_ramp_iters = 10000
+        csv_speed_ramp_iters = 10000
+        push_start_iters = 20000
+        amp_warmup_steps = 5000
 
 
 class Stand14DofWithUpperCSVCfgPPO(LeggedRobotCfgPPO):

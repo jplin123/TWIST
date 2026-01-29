@@ -90,6 +90,11 @@ def apply_debug_init(env_cfg):
         env_cfg.upper_body_csv.max_speed = 1.0
     if hasattr(env_cfg, "env"):
         env_cfg.env.randomize_dof_pos = False
+        # Relax termination to allow gravity/ground contact checks.
+        if hasattr(env_cfg.env, "min_base_height"):
+            env_cfg.env.min_base_height = 0.2
+        if hasattr(env_cfg.env, "terminate_tilt"):
+            env_cfg.env.terminate_tilt = 10.0
 
 
 def resolve_run_dir(args):

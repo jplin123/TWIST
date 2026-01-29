@@ -9,6 +9,9 @@ from .upper_body_csv_player import UpperBodyCSVPlayer
 class Stand14DofWithUpperCSV(LeggedRobot):
     def __init__(self, cfg: Stand14DofWithUpperCSVCfg, sim_params, physics_engine, sim_device, headless):
         self.cfg = cfg
+        # Ensure the base is free and gravity is enabled for the stand task.
+        self.cfg.asset.fix_base_link = False
+        self.cfg.asset.disable_gravity = False
         super().__init__(cfg, sim_params, physics_engine, sim_device, headless)
 
     def _init_buffers(self):
