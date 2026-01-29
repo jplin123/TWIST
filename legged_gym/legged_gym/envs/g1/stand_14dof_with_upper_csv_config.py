@@ -51,57 +51,56 @@ class Stand14DofWithUpperCSVCfg(LeggedRobotCfg):
         curriculum = False
 
     class init_state(LeggedRobotCfg.init_state):
-        pos = [0.0, 0.0, 1.0]
+        pos = [0.0, 0.0, 0.8]
         default_joint_angles = {
-            "left_hip_pitch_joint": -0.2,
+            "left_hip_pitch_joint": -0.1,
             "left_hip_roll_joint": 0.0,
             "left_hip_yaw_joint": 0.0,
-            "left_knee_joint": 0.4,
+            "left_knee_joint": 0.3,
             "left_ankle_pitch_joint": -0.2,
             "left_ankle_roll_joint": 0.0,
-            "right_hip_pitch_joint": -0.2,
+            "right_hip_pitch_joint": -0.1,
             "right_hip_roll_joint": 0.0,
             "right_hip_yaw_joint": 0.0,
-            "right_knee_joint": 0.4,
+            "right_knee_joint": 0.3,
             "right_ankle_pitch_joint": -0.2,
             "right_ankle_roll_joint": 0.0,
             "waist_yaw_joint": 0.0,
             "waist_roll_joint": 0.0,
             "waist_pitch_joint": 0.0,
             "left_shoulder_pitch_joint": 0.0,
-            "left_shoulder_roll_joint": 0.4,
+            "left_shoulder_roll_joint": 0.25,
             "left_shoulder_yaw_joint": 0.0,
-            "left_elbow_joint": 1.2,
+            "left_elbow_joint": 0.97,
             "right_shoulder_pitch_joint": 0.0,
-            "right_shoulder_roll_joint": -0.4,
+            "right_shoulder_roll_joint": -0.25,
             "right_shoulder_yaw_joint": 0.0,
-            "right_elbow_joint": 1.2,
+            "right_elbow_joint": 0.97,
         }
 
     class control(LeggedRobotCfg.control):
-        control_type = "P"
         stiffness = {
-            "hip_yaw": 120.0,
-            "hip_roll": 120.0,
-            "hip_pitch": 120.0,
-            "knee": 160.0,
-            "ankle": 60.0,
-            "waist": 120.0,
+            "hip_yaw": 100.0,
+            "hip_roll": 100.0,
+            "hip_pitch": 100.0,
+            "knee": 150.0,
+            "ankle": 40.0,
+            "waist": 150.0,
             "shoulder": 40.0,
-            "elbow": 35.0,
+            "elbow": 40.0,
         }
         damping = {
-            "hip_yaw": 2.5,
-            "hip_roll": 2.5,
-            "hip_pitch": 2.5,
-            "knee": 5.0,
-            "ankle": 3.0,
+            "hip_yaw": 2.,
+            "hip_roll": 2.,
+            "hip_pitch": 2.,
+            "knee": 4.0,
+            "ankle": 2.0,
             "waist": 4.0,
-            "shoulder": 4.0,
-            "elbow": 3.5,
+            "shoulder": 5.0,
+            "elbow": 5.0,
         }
         action_scale = 0.5
-        decimation = 8
+        decimation = 10
 
     class asset(LeggedRobotCfg.asset):
         file = f"{LEGGED_GYM_ROOT_DIR}/../assets/g1/g1_custom_collision_with_fixed_hand.urdf"
